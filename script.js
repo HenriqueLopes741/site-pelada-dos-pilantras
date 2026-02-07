@@ -5,10 +5,10 @@ let estado = JSON.parse(localStorage.getItem("pelada")) || {
 };
 
 /* VARIÁVEIS DO TIMER */
-let tempoPadrao = 600; // 10 minutos em segundos
+let tempoPadrao = 600; // 10 minutos
 let tempoRestante = tempoPadrao;
 let intervalo = null;
-let dataAlvo = null; // Para calcular tempo real
+let dataAlvo = null;
 
 /* CARREGAR TEMA */
 if (localStorage.getItem("tema") === "light") {
@@ -22,6 +22,8 @@ function renderizar() {
   const containerProxima = document.getElementById("proxima");
   const containerSobrando = document.getElementById("sobrando");
   const containerRanking = document.getElementById("ranking");
+
+  if(!containerJogando) return; // Evita erros se o DOM não estiver pronto
 
   containerJogando.innerHTML = "";
   containerProxima.innerHTML = "";
@@ -51,10 +53,8 @@ function renderizar() {
     containerSobrando.innerHTML += htmlJogador(nome);
   });
 
-  // RANKING COM JOGADORES PARA O PRINT
   const rankingOrdenado = [...estado.times].sort((a,b) => (b.vitorias||0) - (a.vitorias||0));
   rankingOrdenado.forEach((t, i) => {
-    // Aqui adicionamos a lista de nomes abaixo do nome do time no ranking
     const nomesAtletas = t.jogadores.length > 0 ? t.jogadores.join(", ") : "Sem jogadores";
     
     containerRanking.innerHTML += `
@@ -72,7 +72,6 @@ function renderizar() {
   iniciarSortables();
 }
 
-// Gera HTML de um jogador
 function htmlJogador(nome) {
   return `
     <div class="jogador" data-nome="${nome}">
@@ -82,60 +81,48 @@ function htmlJogador(nome) {
   `;
 }
 
-/* --- LÓGICA DO SORTABLE JS (A MÁGICA) --- */
+/* --- LÓGICA DO SORTABLE JS --- */
 function iniciarSortables() {
-  
-  // 1. Permite arrastar TIMES entre "Jogando" e "Próxima"
   const areasTimes = [document.getElementById('jogando'), document.getElementById('proxima')];
   areasTimes.forEach(area => {
-    new Sortable(area, {
-      group: 'times',
-      animation: 150,
-      handle: 'h3', // Só arrasta segurando no título
-      onEnd: function (evt) {
-        sincronizarEstadoComDOM(); // Atualiza JSON após arrastar
-      }
-    });
+    if(area) {
+      new Sortable(area, {
+        group: 'times',
+        animation: 150,
+        handle: 'h3',
+        onEnd: () => sincronizarEstadoComDOM()
+      });
+    }
   });
 
-  // 2. Permite arrastar JOGADORES entre Times e Sobrando
-  const areasJogadores = document.querySelectorAll('.lista-jogadores');
+  const areasJogadores = document.querySelectorAll('.lista-jogadores, #sobrando');
   areasJogadores.forEach(area => {
     new Sortable(area, {
       group: 'jogadores',
       animation: 150,
-      onEnd: function (evt) {
-        sincronizarEstadoComDOM(); // Atualiza JSON após arrastar
-      }
+      onEnd: () => sincronizarEstadoComDOM()
     });
   });
 }
 
-// Essa função lê o HTML atual e atualiza o objeto 'estado'
-// É o segredo para o Sortable funcionar com LocalStorage
 function sincronizarEstadoComDOM() {
   const timesAtualizados = [];
   
-  // Varre Times Jogando
   document.getElementById("jogando").querySelectorAll(".time").forEach(el => {
     timesAtualizados.push(montarObjetoTime(el, "jogando"));
   });
 
-  // Varre Times Próxima
   document.getElementById("proxima").querySelectorAll(".time").forEach(el => {
     timesAtualizados.push(montarObjetoTime(el, "proxima"));
   });
 
-  // Atualiza Sobrando
   const novosSobrando = [];
   document.getElementById("sobrando").querySelectorAll(".jogador").forEach(el => {
     novosSobrando.push(el.dataset.nome);
   });
 
-  // Salva no estado global (mantendo vitórias antigas)
   estado.sobrando = novosSobrando;
   
-  // Mescla dados novos (posição) com antigos (vitórias)
   estado.times = timesAtualizados.map(novoT => {
     const antigoT = estado.times.find(t => t.nome === novoT.nome);
     if (antigoT) novoT.vitorias = antigoT.vitorias;
@@ -143,8 +130,6 @@ function sincronizarEstadoComDOM() {
   });
 
   salvar();
-  // Nota: Não chamamos renderizar() aqui para não piscar a tela
-  // Apenas atualizamos o ranking visualmente se necessário
 }
 
 function montarObjetoTime(elementoDOM, status) {
@@ -153,18 +138,29 @@ function montarObjetoTime(elementoDOM, status) {
   elementoDOM.querySelectorAll(".jogador").forEach(j => {
     jogadores.push(j.dataset.nome);
   });
-  return { nome, status, jogadores, vitorias: 0 }; // vitorias recuperadas depois
+  return { nome, status, jogadores, vitorias: 0 };
 }
 
 /* --- AÇÕES DO JOGO --- */
 
-function adicionarJogador() {
+function adicionarJogadoresMassa() {
   const input = document.getElementById("nomeJogador");
-  if (!input.value) return;
-  estado.sobrando.push(input.value);
-  input.value = "";
+  const texto = input.value;
+  if (!texto.trim()) return;
+
+  const nomesExtraidos = texto.split(/[,|\n]/);
+  nomesExtraidos.forEach(nome => {
+    const nomeLimpo = nome.trim();
+    if (nomeLimpo.length > 0 && !estado.sobrando.includes(nomeLimpo)) {
+      estado.sobrando.push(nomeLimpo);
+    }
+  });
+
+  input.value = ""; 
   renderizar();
 }
+
+function adicionarJogador() { adicionarJogadoresMassa(); }
 
 function adicionarTime() {
   const input = document.getElementById("nomeTime");
@@ -186,45 +182,50 @@ function removerJogador(nome) {
   renderizar();
 }
 
+/* --- VITORIA E EMPATE --- */
+
 function timeGanhou() {
   const jogando = estado.times.filter(t => t.status === "jogando");
-  
-  if (jogando.length !== 2) {
-    return alert("Precisa ter 2 times na área 'Jogando Agora'!");
-  }
+  if (jogando.length !== 2) return alert("Precisa ter 2 times na área 'Jogando Agora'!");
 
-  // Prepara o Modal
   const modal = document.getElementById("modalVitoria");
   const containerOpcoes = document.getElementById("opcoesVitoria");
-  containerOpcoes.innerHTML = ""; // Limpa opções anteriores
+  containerOpcoes.innerHTML = "";
 
-  // Cria um botão grande para cada time
   jogando.forEach(time => {
     const btn = document.createElement("button");
-    btn.className = "btn-zao-verde"; // Usa a classe que já criamos
+    btn.className = "btn-zao-verde";
     btn.style.width = "100%";
     btn.innerHTML = `🏆 ${time.nome}`;
     btn.onclick = () => confirmarVencedor(time.nome);
     containerOpcoes.appendChild(btn);
   });
-
   modal.style.display = "flex";
 }
 
 function confirmarVencedor(nomeVencedor) {
+  // --- CHUVA DE CONFETE ---
+  if (typeof confetti === "function") {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      zIndex: 9999
+    });
+  }
+
   const jogando = estado.times.filter(t => t.status === "jogando");
   const vencedor = jogando.find(t => t.nome === nomeVencedor);
   const perdedor = jogando.find(t => t.nome !== nomeVencedor);
 
-  // Lógica de pontos e troca
-  vencedor.vitorias = (vencedor.vitorias || 0) + 1;
-  perdedor.status = "proxima";
+  if (vencedor) vencedor.vitorias = (vencedor.vitorias || 0) + 1;
+  if (perdedor) perdedor.status = "proxima";
 
-  // Move perdedor para o final da fila no array
+  // Reposiciona perdedor no fim da fila
   estado.times = estado.times.filter(t => t !== perdedor);
   estado.times.push(perdedor);
 
-  // Próximo entra
+  // Coloca o próximo para jogar
   const proximo = estado.times.find(t => t.status === "proxima" && t !== perdedor);
   if (proximo) proximo.status = "jogando";
 
@@ -239,18 +240,14 @@ function fecharModalVitoria() {
 
 function empate() {
   if (!confirm("Confirmar empate? Os dois saem.")) return;
-
   const jogando = estado.times.filter(t => t.status === "jogando");
   
-  // Move os dois atuais para o final da fila "proxima"
   jogando.forEach(t => {
     t.status = "proxima";
-    // Mover no array para o final
     estado.times = estado.times.filter(x => x !== t);
     estado.times.push(t);
   });
 
-  // Pega os dois próximos
   const proximos = estado.times.filter(t => t.status === "proxima").slice(0, 2);
   proximos.forEach(t => t.status = "jogando");
 
@@ -265,20 +262,15 @@ function resetarTudo() {
   }
 }
 
-/* --- TIMER INTELIGENTE (CORRIGIDO PARA MOBILE) --- */
+/* --- TIMER --- */
 function iniciarTimer() {
   if (intervalo) return;
-  
-  // Destrava áudio no iOS (primeiro clique)
-  document.getElementById("somFim").load(); 
-
-  // Define o alvo baseado no tempo restante
+  const som = document.getElementById("somFim");
+  if(som) som.load(); 
   dataAlvo = Date.now() + (tempoRestante * 1000);
-
   intervalo = setInterval(() => {
     const agora = Date.now();
     const diff = Math.ceil((dataAlvo - agora) / 1000);
-
     if (diff <= 0) {
       tempoRestante = 0;
       pausarTimer();
@@ -302,14 +294,16 @@ function resetarTimer() {
 }
 
 function atualizarTempoDisplay() {
+  const display = document.getElementById("tempo");
+  if(!display) return;
   const m = Math.floor(tempoRestante / 60).toString().padStart(2, '0');
   const s = (tempoRestante % 60).toString().padStart(2, '0');
-  document.getElementById("tempo").innerText = `${m}:${s}`;
+  display.innerText = `${m}:${s}`;
 }
 
 function tocarSom() {
   const audio = document.getElementById("somFim");
-  audio.play().catch(e => console.log("Erro áudio:", e));
+  if(audio) audio.play().catch(e => console.log(e));
   alert("FIM DE JOGO! ⏱️");
 }
 
@@ -333,43 +327,49 @@ function gerarPrintRanking() {
   });
 }
 
-// Hack para destravar áudio no iOS no primeiro toque qualquer
-document.body.addEventListener('touchstart', function() {
-  const a = document.getElementById("somFim");
-  if(a) { a.play().then(() => { a.pause(); a.currentTime=0; }).catch(()=>{}); }
-}, {once:true});
-
-
 function sortearTimes() {
-  // 1. Verifica se há jogadores sobrando para sortear
-  if (estado.sobrando.length === 0) {
-    return alert("Não há jogadores na lista 'Sobrando' para sortear!");
-  }
+  if (estado.sobrando.length === 0) return alert("Não há jogadores sobrando!");
 
-  // 2. Embaralha o array de jogadores sobrando (Algoritmo Fisher-Yates)
   let jogadoresParaSortear = [...estado.sobrando];
   for (let i = jogadoresParaSortear.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [jogadoresParaSortear[i], jogadoresParaSortear[j]] = [jogadoresParaSortear[j], jogadoresParaSortear[i]];
   }
 
-  // 3. Tenta preencher os times que já existem
-  // Vamos percorrer os times e ver quem tem espaço (máximo 5)
   estado.times.forEach(time => {
     while (time.jogadores.length < 5 && jogadoresParaSortear.length > 0) {
-      const jogadorSorteado = jogadoresParaSortear.shift(); // Tira o primeiro do sorteio
-      time.jogadores.push(jogadorSorteado);
+      time.jogadores.push(jogadoresParaSortear.shift());
     }
   });
 
-  // 4. Se ainda sobrou gente no sorteio, eles voltam para o 'sobrando'
-  // Mas agora já estão embaralhados (o que é bom para a próxima chamada)
   estado.sobrando = jogadoresParaSortear;
-
-  // 5. Atualiza a tela e salva
   renderizar();
-  alert("Times sorteados com sucesso! 🎲");
 }
+
+function abrirAjuda() { document.getElementById('modalAjuda').style.display = 'flex'; }
+function fecharAjuda() { document.getElementById('modalAjuda').style.display = 'none'; }
+
+function adicionarMinuto() {
+  tempoRestante += 60;
+  if (!intervalo) {
+    atualizarTempoDisplay();
+  } else {
+    dataAlvo += 60000;
+  }
+}
+
+function mudarTempoPadrao(minutos) {
+  tempoPadrao = minutos * 60;
+  tempoRestante = tempoPadrao;
+  atualizarTempoDisplay();
+  salvar();
+}
+
+// Hack iOS áudio
+document.body.addEventListener('touchstart', function() {
+  const a = document.getElementById("somFim");
+  if(a) { a.play().then(() => { a.pause(); a.currentTime=0; }).catch(()=>{}); }
+}, {once:true});
 
 // INICIALIZAÇÃO
 renderizar();

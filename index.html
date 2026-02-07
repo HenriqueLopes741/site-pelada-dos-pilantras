@@ -7,37 +7,58 @@
   <link rel="stylesheet" href="estilo.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
   <meta name="theme-color" content="#0f172a"> 
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
+  
+  
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
 </head>
 <body>
 
-    <div id="modalVitoria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; padding:20px;">
-  <div style="background:#1e293b; width:100%; max-width:400px; border-radius:15px; padding:20px; text-align:center; border:2px solid #22c55e;">
-    <h2 style="margin-bottom:20px;">Quem ganhou? ⚽</h2>
-    <div id="opcoesVitoria" style="display:flex; flex-direction:column; gap:15px;">
-      </div>
-    <button onclick="fecharModalVitoria()" style="margin-top:20px; background:transparent; color:#94a3b8; text-decoration:underline;">Cancelar</button>
+  <div id="modalVitoria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#1e293b; width:100%; max-width:400px; border-radius:15px; padding:20px; text-align:center; border:2px solid #22c55e;">
+      <h2 style="margin-bottom:20px;">Quem ganhou? ⚽</h2>
+      <div id="opcoesVitoria" style="display:flex; flex-direction:column; gap:15px;"></div>
+      <button onclick="fecharModalVitoria()" style="margin-top:20px; background:transparent; color:#94a3b8; text-decoration:underline; border:none; cursor:pointer;">Cancelar</button>
+    </div>
   </div>
-</div>
+
+  <div id="modalAjuda" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:3000; padding:20px; overflow-y:auto; align-items:center; justify-content:center;">
+    <div style="max-width:400px; margin:auto; color:white; text-align:center;">
+      <h2 style="color:#22c55e;">📲 Como instalar no celular</h2>
+      <div style="margin-top:20px; text-align:left;">
+        <h3 style="font-size:16px;">No iPhone (Safari):</h3>
+        <p style="font-size:14px; opacity:0.8;">1. Toque no ícone de <b>Compartilhar</b> (seta para cima).<br>2. Toque em <b>'Adicionar à Tela de Início'</b>.</p>
+      </div>
+      <div style="margin-top:20px; text-align:left;">
+        <h3 style="font-size:16px;">No Android (Chrome):</h3>
+        <p style="font-size:14px; opacity:0.8;">1. Toque nos <b>três pontinhos</b> no canto superior.<br>2. Toque em <b>'Instalar aplicativo'</b> ou 'Adicionar à tela inicial'.</p>
+      </div>
+      <button onclick="fecharAjuda()" style="margin-top:30px; width:100%; padding:15px; background:#ef4444; border-radius:10px; color:white; font-weight:bold; border:none; cursor:pointer;">ENTENDI</button>
+    </div>
+  </div>
 
   <h1>⚽ Pelada dos Pilantras</h1>
 
   <div class="painel-admin">
-    <div class="topo">
-      <input id="nomeJogador" placeholder="Nome do jogador" autocomplete="off">
-      <button onclick="adicionarJogador()" class="btn-verde">➕ Jogador</button>
+    <div class="topo" style="flex-direction: column; gap: 5px; align-items: flex-start;">
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <input id="nomeJogador" placeholder="Nomes (separe por vírgula ou linha)" autocomplete="off" style="flex:1;">
+        <button onclick="adicionarJogadoresMassa()" class="btn-verde">➕ Jogador</button>
+      </div>
+      <small style="opacity: 0.6; font-size: 11px; color: #94a3b8; margin-bottom: 10px;">Dica: Pode colar a lista do WhatsApp!</small>
     </div>
 
     <div class="topo">
-      <input id="nomeTime" placeholder="Nome do time" autocomplete="off">
+      <input id="nomeTime" placeholder="Nome do time (ex: Sem Colete)" autocomplete="off">
       <button onclick="adicionarTime()" class="btn-azul">🛡️ Time</button>
     </div>
 
@@ -45,12 +66,12 @@
       <button onclick="alternarTema()" class="btn-cinza">🌗 Tema</button>
       <button onclick="gerarPrintRanking()" class="btn-roxo">📸 Print</button>
       <button onclick="resetarTudo()" class="btn-vermelho">🗑️ Reset</button>
-      <button onclick="sortearTimes()" class="btn-azul" style="background: #f59e0b; color: #451a03;">🎲 Sortear Times</button>
+      <button onclick="sortearTimes()" class="btn-azul" style="background: #f59e0b; color: #451a03;">🎲 Sortear</button>
+      <button onclick="abrirAjuda()" class="btn-cinza" style="background: #1e293b; border: 1px solid #3b82f6;">❓ Ajuda</button>
     </div>
   </div>
 
   <div class="game-area">
-    
     <h2 class="titulo-secao">🟢 Jogando Agora</h2>
     <div id="jogando" class="lista-times"></div>
 
@@ -65,13 +86,13 @@
   </div>
 
   <div class="sticky-footer">
-    
     <div class="timer-box">
       <span id="tempo">10:00</span>
       <div class="timer-btns">
         <button onclick="iniciarTimer()">▶</button>
         <button onclick="pausarTimer()">⏸</button>
         <button onclick="resetarTimer()">⏹</button>
+        <button onclick="adicionarMinuto()" style="background: #3b82f6; font-size: 12px; font-weight: bold;">+1'</button>
       </div>
     </div>
 
@@ -79,7 +100,6 @@
       <button onclick="timeGanhou()" class="btn-zao-verde">⚽ GOL / WIN</button>
       <button onclick="empate()" class="btn-zao-azul">🤝 EMPATE</button>
     </div>
-
   </div>
 
   <audio id="somFim" preload="auto">
@@ -88,5 +108,10 @@
   </audio>
 
   <script src="script.js"></script>
+
+  <div class="topo" style="margin-top: 10px;">
+  <label style="font-size: 12px; opacity: 0.7;">Tempo da partida (min):</label>
+  <input type="number" id="tempoInput" value="10" min="1" onchange="mudarTempoPadrao(this.value)" style="width: 60px; padding: 5px;">
+</div>
 </body>
 </html>
