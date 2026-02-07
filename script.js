@@ -371,5 +371,26 @@ document.body.addEventListener('touchstart', function() {
   if(a) { a.play().then(() => { a.pause(); a.currentTime=0; }).catch(()=>{}); }
 }, {once:true});
 
+function verificarSenha() {
+  const senhaCorreta = "PILANTRA123"; // Defina sua senha aqui
+  const senhaDigitada = document.getElementById("senhaAcesso").value;
+  const erro = document.getElementById("erroLogin");
+
+  if (senhaDigitada === senhaCorreta) {
+    document.getElementById("telaLogin").style.display = "none";
+    sessionStorage.setItem("autorizado", "true"); // Mantém logado apenas nesta sessão
+  } else {
+    erro.style.display = "block";
+    alert("Senha incorreta!");
+  }
+}
+
+// Verifica se já estava logado ao carregar a página
+window.onload = () => {
+  if (sessionStorage.getItem("autorizado") === "true") {
+    document.getElementById("telaLogin").style.display = "none";
+  }
+};
+
 // INICIALIZAÇÃO
 renderizar();

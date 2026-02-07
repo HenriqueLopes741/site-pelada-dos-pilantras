@@ -23,6 +23,12 @@
 </head>
 <body>
 
+  <div id="telaLogin" style="position:fixed; inset:0; background:#0f172a; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
+  <h2 style="color:white; margin-bottom:20px;">⚽ Acesso Restrito</h2>
+  <input type="password" id="senhaAcesso" placeholder="Digite a chave mestra" style="padding:15px; border-radius:10px; border:none; width:100%; max-width:300px; margin-bottom:15px; text-align:center;">
+  <button onclick="verificarSenha()" class="btn-verde" style="width:100%; max-width:300px; padding:15px;">Entrar no App</button>
+  <p id="erroLogin" style="color:#ef4444; margin-top:10px; display:none;">Chave incorreta!</p>
+</div>
   <div id="modalVitoria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div style="background:#1e293b; width:100%; max-width:400px; border-radius:15px; padding:20px; text-align:center; border:2px solid #22c55e;">
       <h2 style="margin-bottom:20px;">Quem ganhou? ⚽</h2>
