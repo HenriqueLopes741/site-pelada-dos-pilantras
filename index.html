@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pelada dos Pilantras Pro</title>
+  <link rel="stylesheet" href="estilo.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div id="modalVitoria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:#1e293b; width:100%; max-width:400px; border-radius:15px; padding:20px; text-align:center; border:2px solid #22c55e;">
+    <h2 style="margin-bottom:20px;">Quem ganhou? ⚽</h2>
+    <div id="opcoesVitoria" style="display:flex; flex-direction:column; gap:15px;">
+      </div>
+    <button onclick="fecharModalVitoria()" style="margin-top:20px; background:transparent; color:#94a3b8; text-decoration:underline;">Cancelar</button>
+  </div>
+</div>
+
+  <h1>⚽ Pelada dos Pilantras</h1>
+
+  <div class="painel-admin">
+    <div class="topo">
+      <input id="nomeJogador" placeholder="Nome do jogador" autocomplete="off">
+      <button onclick="adicionarJogador()" class="btn-verde">➕ Jogador</button>
+    </div>
+
+    <div class="topo">
+      <input id="nomeTime" placeholder="Nome do time" autocomplete="off">
+      <button onclick="adicionarTime()" class="btn-azul">🛡️ Time</button>
+    </div>
+
+    <div class="topo-botoes">
+      <button onclick="alternarTema()" class="btn-cinza">🌗 Tema</button>
+      <button onclick="gerarPrintRanking()" class="btn-roxo">📸 Print</button>
+      <button onclick="resetarTudo()" class="btn-vermelho">🗑️ Reset</button>
+      <button onclick="sortearTimes()" class="btn-azul" style="background: #f59e0b; color: #451a03;">🎲 Sortear Times</button>
+    </div>
+  </div>
+
+  <div class="game-area">
+    
+    <h2 class="titulo-secao">🟢 Jogando Agora</h2>
+    <div id="jogando" class="lista-times"></div>
+
+    <h2 class="titulo-secao">🔵 Próximos</h2>
+    <div id="proxima" class="lista-times"></div>
+
+    <h2 class="titulo-secao">🟡 Jogadores Sobrando</h2>
+    <div id="sobrando" class="lista-jogadores"></div>
+
+    <h2 class="titulo-secao">🏆 Ranking</h2>
+    <div id="ranking"></div>
+  </div>
+
+  <div class="sticky-footer">
+    
+    <div class="timer-box">
+      <span id="tempo">10:00</span>
+      <div class="timer-btns">
+        <button onclick="iniciarTimer()">▶</button>
+        <button onclick="pausarTimer()">⏸</button>
+        <button onclick="resetarTimer()">⏹</button>
+      </div>
+    </div>
+
+    <div class="game-actions">
+      <button onclick="timeGanhou()" class="btn-zao-verde">⚽ GOL / WIN</button>
+      <button onclick="empate()" class="btn-zao-azul">🤝 EMPATE</button>
+    </div>
+
+  </div>
+
+  <audio id="somFim" preload="auto">
+    <source src="https://actions.google.com/sounds/v1/alarms/buzzer.ogg" type="audio/ogg">
+    <source src="https://actions.google.com/sounds/v1/alarms/buzzer.mp3" type="audio/mpeg">
+  </audio>
+
+  <script src="script.js"></script>
+</body>
+</html>

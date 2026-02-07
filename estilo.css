@@ -1,0 +1,153 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: #0f172a;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 10px;
+  padding-bottom: 140px; /* Espaço para o rodapé fixo não cobrir conteúdo */
+}
+
+body.light {
+  background: #f1f5f9;
+  color: #020617;
+}
+
+h1 { text-align: center; margin: 10px 0 20px; font-size: 24px; }
+h2.titulo-secao { font-size: 18px; margin: 20px 0 10px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+
+/* INPUTS E BOTÕES GERAIS */
+input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: white;
+  font-size: 16px !important; /* Evita zoom no iOS */
+}
+body.light input { background: white; color: black; border-color: #cbd5e1; }
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.1s;
+}
+button:active { transform: scale(0.96); }
+
+/* CORES DE BOTÕES */
+.btn-verde { background: #22c55e; color: #022c22; }
+.btn-azul { background: #3b82f6; color: white; }
+.btn-vermelho { background: #ef4444; color: white; }
+.btn-roxo { background: #8b5cf6; color: white; }
+.btn-cinza { background: #64748b; color: white; }
+
+/* LAYOUT DE CADASTRO */
+.topo { display: flex; gap: 8px; margin-bottom: 10px; }
+.topo-botoes { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+
+/* TIMES E CARDS */
+.lista-times {
+  min-height: 50px; /* Para conseguir soltar itens mesmo vazio */
+}
+
+.time {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+body.light .time { background: white; border-color: #e2e8f0; }
+
+.time h3 {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 0 0 10px 0; font-size: 18px;
+}
+
+/* DESTAQUE DO JOGO ATUAL */
+#jogando .time {
+  border: 2px solid #22c55e;
+  background: rgba(34, 197, 94, 0.05);
+}
+
+/* LISTA DE JOGADORES (DENTRO DO TIME E SOBRANDO) */
+.lista-jogadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
+  padding: 4px;
+  border-radius: 8px;
+}
+#sobrando {
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+}
+
+/* CARD DO JOGADOR */
+.jogador {
+  background: #0ea5e9;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex; align-items: center; gap: 8px;
+  user-select: none;
+  touch-action: none; /* Importante para mobile */
+}
+.jogador .remove-btn {
+  background: rgba(0,0,0,0.2);
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; padding: 0;
+}
+
+/* ANIMAÇÃO SORTABLE (VISUAL AO ARRASTAR) */
+.sortable-ghost { opacity: 0.4; background: #94a3b8; }
+.sortable-drag { cursor: grabbing; transform: scale(1.05); }
+
+/* RODAPÉ FIXO (STICKY FOOTER) */
+.sticky-footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #0f172a;
+  border-top: 1px solid #334155;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+}
+body.light .sticky-footer { background: #f1f5f9; border-color: #cbd5e1; }
+
+.timer-box {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #1e293b; padding: 8px 15px; border-radius: 8px;
+}
+#tempo { font-size: 24px; font-family: monospace; font-weight: bold; color: #fbbf24; }
+.timer-btns button { padding: 6px 12px; margin-left: 4px; font-size: 18px; }
+
+.game-actions { display: flex; gap: 10px; }
+.btn-zao-verde { flex: 2; background: #22c55e; height: 50px; font-size: 16px; text-transform: uppercase; box-shadow: 0 4px 0 #15803d; }
+.btn-zao-verde:active { box-shadow: none; transform: translateY(4px); }
+.btn-zao-azul { flex: 1; background: #3b82f6; height: 50px; font-size: 14px; box-shadow: 0 4px 0 #1d4ed8; }
+.btn-zao-azul:active { box-shadow: none; transform: translateY(4px); }
+
+/* RANKING */
+#ranking {
+  background: #1e293b; padding: 15px; border-radius: 12px; font-size: 15px;
+}
+.rank-item { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
