@@ -1,178 +1,153 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Pelada dos Pilantras Pro</title>
-  <link rel="stylesheet" href="estilo.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="apple-touch-icon" href="icon.png">
-  <meta name="theme-color" content="#0f172a"> 
-  
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pelada dos Pilantras PRO</title>
+    
+    <link rel="stylesheet" href="estilo.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
-  <div id="telaLogin" style="position:fixed; inset:0; background:#0f172a; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-  <h2 style="color:white; margin-bottom:20px;">⚽ Acesso Restrito</h2>
-  <input type="password" id="senhaAcesso" placeholder="Digite a chave mestra" style="padding:15px; border-radius:10px; border:none; width:100%; max-width:300px; margin-bottom:15px; text-align:center;">
-  <button onclick="verificarSenha()" class="btn-verde" style="width:100%; max-width:300px; padding:15px;">Entrar no App</button>
-  <p id="erroLogin" style="color:#ef4444; margin-top:10px; display:none;">Chave incorreta!</p>
-</div>
-  <div id="modalVitoria" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:#1e293b; width:100%; max-width:400px; border-radius:15px; padding:20px; text-align:center; border:2px solid #22c55e;">
-      <h2 style="margin-bottom:20px;">Quem ganhou? ⚽</h2>
-      <div id="opcoesVitoria" style="display:flex; flex-direction:column; gap:15px;"></div>
-      <button onclick="fecharModalVitoria()" style="margin-top:20px; background:transparent; color:#94a3b8; text-decoration:underline; border:none; cursor:pointer;">Cancelar</button>
-    </div>
-  </div>
-
-  <div id="modalAjuda" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:3000; padding:20px; overflow-y:auto; align-items:center; justify-content:center;">
-    <div style="max-width:400px; margin:auto; color:white; text-align:center;">
-      <h2 style="color:#22c55e;">📲 Como instalar no celular</h2>
-      <div style="margin-top:20px; text-align:left;">
-        <h3 style="font-size:16px;">No iPhone (Safari):</h3>
-        <p style="font-size:14px; opacity:0.8;">1. Toque no ícone de <b>Compartilhar</b> (seta para cima).<br>2. Toque em <b>'Adicionar à Tela de Início'</b>.</p>
-      </div>
-      <div style="margin-top:20px; text-align:left;">
-        <h3 style="font-size:16px;">No Android (Chrome):</h3>
-        <p style="font-size:14px; opacity:0.8;">1. Toque nos <b>três pontinhos</b> no canto superior.<br>2. Toque em <b>'Instalar aplicativo'</b> ou 'Adicionar à tela inicial'.</p>
-      </div>
-      <button onclick="fecharAjuda()" style="margin-top:30px; width:100%; padding:15px; background:#ef4444; border-radius:10px; color:white; font-weight:bold; border:none; cursor:pointer;">ENTENDI</button>
-    </div>
-  </div>
-
-  <h1>⚽ Pelada dos Pilantras</h1>
-
-  <div class="painel-admin">
-    <div class="topo" style="flex-direction: column; gap: 5px; align-items: flex-start;">
-      <div style="display: flex; gap: 8px; width: 100%;">
-        <input id="nomeJogador" placeholder="Nomes (separe por vírgula ou linha)" autocomplete="off" style="flex:1;">
-        <button onclick="adicionarJogadoresMassa()" class="btn-verde">➕ Jogador</button>
-      </div>
-      <small style="opacity: 0.6; font-size: 11px; color: #94a3b8; margin-bottom: 10px;">Dica: Pode colar a lista do WhatsApp!</small>
+    <div id="telaLogin">
+        <div style="text-align:center;">
+            <h1>🔒 Acesso Restrito</h1>
+            <p>Digite a senha da pelada</p>
+            <input type="password" id="senhaAcesso" placeholder="Senha..." onkeyup="if(event.key==='Enter') verificarSenha()">
+            <br><br>
+            <button class="btn-zao" onclick="verificarSenha()">ENTRAR</button>
+            <p id="erroLogin" style="color:red; display:none; margin-top:10px;">Senha incorreta!</p>
+        </div>
     </div>
 
-    <div class="topo">
-      <input id="nomeTime" placeholder="Nome do time (ex: Sem Colete)" autocomplete="off">
-      <button onclick="adicionarTime()" class="btn-azul">🛡️ Time</button>
+    <div class="header">
+        <button class="btn-icon" onclick="abrirAjuda()">❓</button>
+        <h1>⚽ Pelada PRO</h1>
+        <button class="btn-icon" onclick="alternarTema()">🌗</button>
     </div>
 
-    <div class="topo-botoes">
-      <button onclick="alternarTema()" class="btn-cinza">🌗 Tema</button>
-      <button onclick="gerarPrintRanking()" class="btn-roxo">📸 Print</button>
-      <button onclick="resetarTudo()" class="btn-vermelho">🗑️ Reset</button>
-      <button onclick="sortearTimes()" class="btn-azul" style="background: #f59e0b; color: #451a03;">🎲 Sortear</button>
-      <button onclick="abrirAjuda()" class="btn-cinza" style="background: #1e293b; border: 1px solid #3b82f6;">❓ Ajuda</button>
-    </div>
-  </div>
-
-  <div class="game-area">
-    <h2 class="titulo-secao">🟢 Jogando Agora</h2>
-    <div id="jogando" class="lista-times"></div>
-
-    <h2 class="titulo-secao">🔵 Próximos</h2>
-    <div id="proxima" class="lista-times"></div>
-
-    <h2 class="titulo-secao">🟡 Jogadores Sobrando</h2>
-    <div id="sobrando" class="lista-jogadores"></div>
-
-    <h2 class="titulo-secao">🏆 Ranking</h2>
-    <div id="ranking"></div>
-  </div>
-
-  <div class="sticky-footer">
-    <div class="timer-box">
-      <span id="tempo">10:00</span>
-      <div class="timer-btns">
-        <button onclick="iniciarTimer()">▶</button>
-        <button onclick="pausarTimer()">⏸</button>
-        <button onclick="resetarTimer()">⏹</button>
-        <button onclick="adicionarMinuto()" style="background: #3b82f6; font-size: 12px; font-weight: bold;">+1'</button>
-      </div>
+    <div class="placar">
+        <span id="tempo">10:00</span>
+        <div class="controles-timer">
+            <button class="btn-play" onclick="iniciarTimer()">▶</button>
+            <button class="btn-pause" onclick="pausarTimer()">⏸</button>
+            <button class="btn-reset" onclick="resetarTimer()">↺</button>
+            <button onclick="adicionarMinuto()" style="background:#333; color:#fff;">+1m</button>
+            <button onclick="mudarTempoPadrao(prompt('Quantos minutos?', '10'))" style="background:#333; color:#fff;">⏱️ Cfg</button>
+        </div>
     </div>
 
-    <div class="game-actions">
-      <button onclick="timeGanhou()" class="btn-zao-verde">⚽ GOL / WIN</button>
-      <button onclick="empate()" class="btn-zao-azul">🤝 EMPATE</button>
+    <div class="area-titulo">JOGANDO AGORA</div>
+    <div id="jogando" class="container-times"></div>
+
+    <button class="btn-zao-verde" onclick="timeGanhou()">🏆 ALGUÉM GANHOU!</button>
+    <button class="btn-zao-cinza" onclick="empate()">🤝 EMPATE (SAEM OS 2)</button>
+
+    <div class="area-titulo">PRÓXIMOS TIMES</div>
+    <div id="proxima" class="container-times"></div>
+    
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <input type="text" id="nomeTime" placeholder="Nome do Time..." style="flex:1; padding:10px; border-radius:8px; border:none;">
+        <button onclick="adicionarTime()" style="background:var(--accent); color:#fff;">Criar Time</button>
     </div>
-  </div>
 
-  <audio id="somFim" preload="auto">
-    <source src="https://actions.google.com/sounds/v1/alarms/buzzer.ogg" type="audio/ogg">
-    <source src="https://actions.google.com/sounds/v1/alarms/buzzer.mp3" type="audio/mpeg">
-  </audio>
+    <div class="area-titulo" style="margin-top:30px;">SOBRANDO / DE FORA</div>
+    <div style="display:flex; gap:5px; margin-bottom:10px;">
+        <input type="text" id="nomeJogador" placeholder="Nome do jogador..." style="flex:1; padding:10px; border-radius:8px; border:none;" onkeyup="if(event.key==='Enter') adicionarJogador()">
+        <button onclick="adicionarJogador()" style="background:var(--accent); color:#fff;">+</button>
+    </div>
+    
+    <div id="sobrando" class="lista-jogadores" style="min-height:50px; background:rgba(0,0,0,0.1); border-radius:10px; padding:10px;"></div>
 
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <br>
+    <button class="btn-zao" onclick="sortearTimes()">🎲 SORTEAR TIMES</button>
 
-  const firebaseConfig = {
-  apiKey: "AIzaSyDHpJlzcM3zta6R9h5dq6HiojXdodTT1O8",
-  authDomain: "peladapilantraspro.firebaseapp.com",
-  databaseURL: "https://peladapilantraspro-default-rtdb.firebaseio.com",
-  projectId: "peladapilantraspro",
-  storageBucket: "peladapilantraspro.firebasestorage.app",
-  messagingSenderId: "444542616913",
-  appId: "1:444542616913:web:16a9f42f0d85f21371bf70"
+    <div class="area-titulo" style="margin-top:40px;">RANKING GERAL</div>
+    <div id="ranking" style="background:var(--card); padding:15px; border-radius:10px;"></div>
+    <button onclick="gerarPrintRanking()" style="width:100%; margin-top:10px; background:#444; color:#fff; padding:10px; border-radius:8px;">📸 Baixar Imagem do Ranking</button>
+
+    <br><br><br>
+    <button onclick="resetarTudo()" style="width:100%; background:#ef4444; color:#fff; padding:15px; border-radius:8px;">⚠️ RESETAR TUDO (PERIGO)</button>
+
+    <audio id="somFim" preload="auto">
+        <source src="https://actions.google.com/sounds/v1/alarms/buzzer.ogg" type="audio/ogg">
+        <source src="https://actions.google.com/sounds/v1/alarms/buzzer.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="modalVitoria" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; flex-direction:column; justify-content:center; align-items:center;">
+        <h2 style="color:white; margin-bottom:20px;">QUEM GANHOU?</h2>
+        <div id="opcoesVitoria" style="width:80%; display:flex; flex-direction:column; gap:10px;"></div>
+        <button onclick="fecharModalVitoria()" style="margin-top:20px; background:red; color:white; padding:10px 30px;">Cancelar</button>
+    </div>
+
+    <div id="modalAjuda" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; flex-direction:column; justify-content:center; align-items:center; padding:20px; text-align:center; color:white;">
+        <h2>Como usar</h2>
+        <p>1. Adicione os jogadores na lista de espera.</p>
+        <p>2. Clique em "Sortear Times" ou crie times manualmente.</p>
+        <p>3. Arraste os times para "Jogando Agora".</p>
+        <p>4. Solte o cronômetro!</p>
+        <button onclick="fecharAjuda()" style="background:var(--accent); color:white; padding:10px 30px; margin-top:20px;">Entendi</button>
+    </div>
+
+    <script type="module">
+        // 1. IMPORTAR FIREBASE
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // 2. CONFIGURAÇÃO (COLE SUAS CHAVES AQUI!!!)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDHpJlzcM3zta6R9h5dq6HiojXdodTT1O8",
+            authDomain: "peladapilantraspro.firebaseapp.com",
+            databaseURL: "https://peladapilantraspro-default-rtdb.firebaseio.com",
+            projectId: "peladapilantraspro",
+            storageBucket: "peladapilantraspro.firebasestorage.app",
+            messagingSenderId: "444542616913",
+            appId: "1:444542616913:web:16a9f42f0d85f21371bf70"
 };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const peladaRef = ref(db, 'partida_atual');
+        // 3. INICIALIZAR
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const peladaRef = ref(db, 'partida_atual');
 
-  // Função global para salvar na nuvem
-  window.enviarParaNuvem = function(dados) {
-    set(peladaRef, dados);
-  };
+        console.log("🔥 Firebase Iniciado!");
 
-  // Escuta mudanças em tempo real
-  // ESCUTAR MUDANÇAS (Ouvido do App)
-onValue(peladaRef, (snapshot) => {
-    const data = snapshot.val();
-    
-    console.log("📡 RECEBI DO FIREBASE:", data); // <--- O DEDO-DURO
+        // 4. FUNÇÃO PARA ENVIAR (Global)
+        window.enviarParaNuvem = function(dados) {
+            set(peladaRef, dados)
+                .then(() => console.log("Dado enviado com sucesso!"))
+                .catch((e) => console.error("Erro ao enviar:", e));
+        };
 
-    if (data) {
-        // Atualiza as variáveis globais do seu jogo
-        // IMPORTANTE: Os nomes aqui têm que ser iguais aos do seu script.js
-        window.jogadores = data.jogadores || [];
-        window.sobrando = data.sobrando || [];
-        window.times = data.times || [];
-        window.historico = data.historico || [];
-        
-        // Se tiver cronômetro salvo e estiver rodando
-        if (data.tempo && data.tempo.rodando) {
-             // Lógica do tempo (podemos ver isso depois)
+        // 5. FUNÇÃO PARA RECEBER (Ouvido Bionico)
+        onValue(peladaRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                console.log("📡 DADOS RECEBIDOS:", data);
+                
+                // Atualiza as variáveis GLOBAIS que o script.js usa
+                window.estado = data;
+                
+                // Manda o script.js desenhar a tela (sem salvar de volta pra não dar loop)
+                if (typeof window.renderizar === "function") {
+                    window.renderizar(false); 
+                }
+            }
+        });
+    </script>
+
+    <script src="script.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
         }
-
-        console.log("🔄 MANDANDO RENDERIZAR A TELA...");
-        
-        // Chama a função do seu script.js para desenhar a tela
-        // O 'false' é para NÃO salvar de volta e criar loop
-        if (typeof window.renderizar === "function") {
-            window.renderizar(false); 
-        } else {
-            console.error("❌ ERRO: Não achei a função window.renderizar!");
-        }
-    }
-});
-</script>
-  <script src="script.js"></script>
-
-  <div class="topo" style="margin-top: 10px;">
-  <label style="font-size: 12px; opacity: 0.7;">Tempo da partida (min):</label>
-  <input type="number" id="tempoInput" value="10" min="1" onchange="mudarTempoPadrao(this.value)" style="width: 60px; padding: 5px;">
-</div>
+    </script>
 </body>
 </html>
