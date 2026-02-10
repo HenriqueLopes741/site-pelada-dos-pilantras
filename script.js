@@ -1,6 +1,3 @@
-
-
-
 /* ESTADO INICIAL */
 let estado = JSON.parse(localStorage.getItem("pelada")) || {
   times: [],
@@ -18,9 +15,24 @@ if (localStorage.getItem("tema") === "light") {
   document.body.classList.add("light");
 }
 
+/* --- FUNÇÕES AUXILIARES VISUAIS --- */
+
+// Feedback Tátil (Vibração)
+function darFeedback() {
+  if (navigator.vibrate) navigator.vibrate(50);
+}
+
+// Notificação (Toast)
+function toast(msg) {
+  const t = document.createElement("div");
+  t.innerText = msg;
+  t.style.cssText = "position:fixed; bottom:140px; left:50%; transform:translateX(-50%); background:#22c55e; color:white; padding:10px 20px; border-radius:30px; z-index:9000; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.5); animation: entradaSuave 0.3s forwards;";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
 /* --- FUNÇÕES PRINCIPAIS --- */
 
-/* Substitua sua função renderizar atual por esta */
 function renderizar(deveSalvarNuvem = true) {
   const containerJogando = document.getElementById("jogando");
   const containerProxima = document.getElementById("proxima");
@@ -39,8 +51,11 @@ function renderizar(deveSalvarNuvem = true) {
     card.className = "time";
     card.dataset.id = time.nome; 
     
+    // Adicionei um botãozinho de lixeira discreto no título do time caso precise excluir
     card.innerHTML = `
-      <h3>${time.nome} <span>${time.vitorias || 0} 🏆</span></h3>
+      <h3>
+        ${time.nome} <span>${time.vitorias || 0} 🏆</span>
+      </h3>
       <div class="lista-jogadores group-jogadores" data-time="${time.nome}">
         ${time.jogadores.map(nome => htmlJogador(nome)).join('')}
       </div>
@@ -62,7 +77,7 @@ function renderizar(deveSalvarNuvem = true) {
     const nomesAtletas = t.jogadores.length > 0 ? t.jogadores.join(", ") : "Sem jogadores";
     
     containerRanking.innerHTML += `
-      <div class="rank-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+      <div class="rank-item" style="display:flex; flex-direction: column; align-items: flex-start; gap: 4px;">
         <div style="display: flex; justify-content: space-between; width: 100%;">
           <span>#${i+1} <b>${t.nome}</b></span> 
           <span>${t.vitorias||0} vitórias</span>
@@ -71,13 +86,13 @@ function renderizar(deveSalvarNuvem = true) {
       </div>`;
   });
 
-  // Salva local e na nuvem se a mudança partiu deste usuário
+  // IMPORTANTE: Só chama o salvar se não estiver vindo de um update do Firebase (loop check)
   salvar(deveSalvarNuvem);
+  
   atualizarTempoDisplay();
   iniciarSortables();
 }
 
-/* Substitua sua função salvar atual por esta */
 function salvar(enviarFirebase = true) {
   localStorage.setItem("pelada", JSON.stringify(estado));
   
@@ -115,7 +130,10 @@ function iniciarSortables() {
     new Sortable(area, {
       group: 'jogadores',
       animation: 150,
-      onEnd: () => sincronizarEstadoComDOM()
+      onEnd: () => {
+         darFeedback(); // Vibra ao soltar o jogador
+         sincronizarEstadoComDOM();
+      }
     });
   });
 }
@@ -159,18 +177,22 @@ function montarObjetoTime(elementoDOM, status) {
 /* --- AÇÕES DO JOGO --- */
 
 function adicionarJogadoresMassa() {
+  darFeedback();
   const input = document.getElementById("nomeJogador");
   const texto = input.value;
   if (!texto.trim()) return;
 
   const nomesExtraidos = texto.split(/[,|\n]/);
+  let adicionou = false;
   nomesExtraidos.forEach(nome => {
     const nomeLimpo = nome.trim();
     if (nomeLimpo.length > 0 && !estado.sobrando.includes(nomeLimpo)) {
       estado.sobrando.push(nomeLimpo);
+      adicionou = true;
     }
   });
 
+  if(adicionou) toast("Jogadores adicionados!");
   input.value = ""; 
   renderizar();
 }
@@ -178,6 +200,7 @@ function adicionarJogadoresMassa() {
 function adicionarJogador() { adicionarJogadoresMassa(); }
 
 function adicionarTime() {
+  darFeedback();
   const input = document.getElementById("nomeTime");
   if (!input.value) return;
   estado.times.push({
@@ -191,6 +214,7 @@ function adicionarTime() {
 }
 
 function removerJogador(nome) {
+  darFeedback();
   if(!confirm(`Remover ${nome}?`)) return;
   estado.sobrando = estado.sobrando.filter(j => j !== nome);
   estado.times.forEach(t => t.jogadores = t.jogadores.filter(j => j !== nome));
@@ -200,6 +224,7 @@ function removerJogador(nome) {
 /* --- VITORIA E EMPATE --- */
 
 function timeGanhou() {
+  darFeedback();
   const jogando = estado.times.filter(t => t.status === "jogando");
   if (jogando.length !== 2) return alert("Precisa ter 2 times na área 'Jogando Agora'!");
 
@@ -219,6 +244,7 @@ function timeGanhou() {
 }
 
 function confirmarVencedor(nomeVencedor) {
+  darFeedback();
   // --- CHUVA DE CONFETE ---
   if (typeof confetti === "function") {
     confetti({
@@ -247,6 +273,7 @@ function confirmarVencedor(nomeVencedor) {
   fecharModalVitoria();
   resetarTimer();
   renderizar();
+  toast(`Vitória do ${nomeVencedor}!`);
 }
 
 function fecharModalVitoria() {
@@ -254,6 +281,7 @@ function fecharModalVitoria() {
 }
 
 function empate() {
+  darFeedback();
   if (!confirm("Confirmar empate? Os dois saem.")) return;
   const jogando = estado.times.filter(t => t.status === "jogando");
   
@@ -268,17 +296,22 @@ function empate() {
 
   resetarTimer();
   renderizar();
+  toast("Empate! Próximos times.");
 }
 
 function resetarTudo() {
+  darFeedback();
   if (confirm("Apagar tudo e começar do zero?")) {
     localStorage.removeItem("pelada");
+    // Se tiver firebase, poderia limpar lá também:
+    // set(ref(db, 'partida_atual'), null);
     location.reload();
   }
 }
 
 /* --- TIMER --- */
 function iniciarTimer() {
+  darFeedback();
   if (intervalo) return;
   const som = document.getElementById("somFim");
   if(som) som.load(); 
@@ -298,11 +331,13 @@ function iniciarTimer() {
 }
 
 function pausarTimer() {
+  if(intervalo) darFeedback();
   clearInterval(intervalo);
   intervalo = null;
 }
 
 function resetarTimer() {
+  darFeedback();
   pausarTimer();
   tempoRestante = tempoPadrao;
   atualizarTempoDisplay();
@@ -314,11 +349,22 @@ function atualizarTempoDisplay() {
   const m = Math.floor(tempoRestante / 60).toString().padStart(2, '0');
   const s = (tempoRestante % 60).toString().padStart(2, '0');
   display.innerText = `${m}:${s}`;
+  
+  // Efeito visual quando acaba
+  if (tempoRestante === 0) {
+      display.style.color = "#ef4444";
+      display.style.animation = "pulsar 0.5s infinite";
+  } else {
+      display.style.color = "#fbbf24";
+      display.style.animation = "none";
+  }
 }
 
 function tocarSom() {
   const audio = document.getElementById("somFim");
   if(audio) audio.play().catch(e => console.log(e));
+  darFeedback(); // Vibra longo no fim
+  if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
   alert("FIM DE JOGO! ⏱️");
 }
 
@@ -328,11 +374,8 @@ function alternarTema() {
   localStorage.setItem("tema", document.body.classList.contains("light") ? "light" : "dark");
 }
 
-function salvar() {
-  localStorage.setItem("pelada", JSON.stringify(estado));
-}
-
 function gerarPrintRanking() {
+  darFeedback();
   const r = document.getElementById("ranking");
   html2canvas(r).then(canvas => {
     const link = document.createElement('a');
@@ -343,6 +386,7 @@ function gerarPrintRanking() {
 }
 
 function sortearTimes() {
+  darFeedback();
   if (estado.sobrando.length === 0) return alert("Não há jogadores sobrando!");
 
   let jogadoresParaSortear = [...estado.sobrando];
@@ -359,12 +403,14 @@ function sortearTimes() {
 
   estado.sobrando = jogadoresParaSortear;
   renderizar();
+  toast("Times sorteados!");
 }
 
 function abrirAjuda() { document.getElementById('modalAjuda').style.display = 'flex'; }
 function fecharAjuda() { document.getElementById('modalAjuda').style.display = 'none'; }
 
 function adicionarMinuto() {
+  darFeedback();
   tempoRestante += 60;
   if (!intervalo) {
     atualizarTempoDisplay();
@@ -387,15 +433,17 @@ document.body.addEventListener('touchstart', function() {
 }, {once:true});
 
 function verificarSenha() {
-  const senhaCorreta = "PILANTRA123"; // Defina sua senha aqui
+  const senhaCorreta = "PILANTRA123"; 
   const senhaDigitada = document.getElementById("senhaAcesso").value;
   const erro = document.getElementById("erroLogin");
 
   if (senhaDigitada === senhaCorreta) {
     document.getElementById("telaLogin").style.display = "none";
-    sessionStorage.setItem("autorizado", "true"); // Mantém logado apenas nesta sessão
+    sessionStorage.setItem("autorizado", "true"); 
+    darFeedback();
   } else {
     erro.style.display = "block";
+    if(navigator.vibrate) navigator.vibrate([100, 50, 100]); // Vibra erro
     alert("Senha incorreta!");
   }
 }
@@ -405,25 +453,6 @@ window.onload = () => {
   if (sessionStorage.getItem("autorizado") === "true") {
     document.getElementById("telaLogin").style.display = "none";
   }
+  // Renderiza inicial (o Firebase vai atualizar em seguida)
+  renderizar();
 };
-
-// INICIALIZAÇÃO
-
-// Feedback Tátil (Vibração)
-function darFeedback() {
-  if (navigator.vibrate) navigator.vibrate(50);
-}
-
-// Notificação elegante (Toast)
-function toast(msg) {
-  const t = document.createElement("div");
-  t.innerHTML = msg;
-  t.style.cssText = "position:fixed; bottom:140px; left:50%; transform:translateX(-50%); background:#22c55e; color:white; padding:10px 20px; border-radius:30px; z-index:9000; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.5); animation: entradaSuave 0.3s forwards;";
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
-}
-
-// Adicione darFeedback() dentro de funções de clique como:
-// function timeGanhou() { darFeedback(); ... }
-
-renderizar();
