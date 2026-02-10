@@ -1,401 +1,396 @@
-/* --- CONFIGURAÇÃO INICIAL GLOBAL --- */
-// Definimos window.estado para garantir que todos vejam a mesma coisa
-// trava de sincronização
-window.vindoDaNuvem = false;
-window.alertaTempoDisparado = false;
-
-
-// id único do dispositivo
-window.deviceId = localStorage.getItem("deviceId");
-if (!window.deviceId) {
-    window.deviceId = crypto.randomUUID();
-    localStorage.setItem("deviceId", window.deviceId);
-}
-
-
-window.estado = window.estado || {
-    times: [],
-    sobrando: []
+/* ESTADO INICIAL */
+let estado = JSON.parse(localStorage.getItem("pelada")) || {
+  times: [],
+  sobrando: []
 };
 
-// Variáveis do Timer Globais
-window.tempoPadrao = 600; // 10 minutos
-window.tempoRestante = window.tempoPadrao;
-window.intervalo = null;
+/* VARIÁVEIS DO TIMER */
+let tempoPadrao = 600; // 10 minutos
+let tempoRestante = tempoPadrao;
+let intervalo = null;
+let dataAlvo = null;
 
-/* --- CARREGAR TEMA --- */
+/* CARREGAR TEMA */
 if (localStorage.getItem("tema") === "light") {
-    document.body.classList.add("light");
+  document.body.classList.add("light");
 }
 
-/* --- FUNÇÃO PRINCIPAL: DESENHAR A TELA --- */
-// Essa função é chamada pelo Firebase quando chega dado novo
-window.renderizar = function(deveSalvar = true) {
-    const containerJogando = document.getElementById("jogando");
-    const containerProxima = document.getElementById("proxima");
-    const containerSobrando = document.getElementById("sobrando");
-    const containerRanking = document.getElementById("ranking");
+/* --- FUNÇÕES PRINCIPAIS --- */
 
-    if (!containerJogando) return; // Segurança
+function renderizar() {
+  const containerJogando = document.getElementById("jogando");
+  const containerProxima = document.getElementById("proxima");
+  const containerSobrando = document.getElementById("sobrando");
+  const containerRanking = document.getElementById("ranking");
 
-    // 1. Limpa tudo
-    containerJogando.innerHTML = "";
-    containerProxima.innerHTML = "";
-    containerSobrando.innerHTML = "";
-    containerRanking.innerHTML = "";
+  if(!containerJogando) return; // Evita erros se o DOM não estiver pronto
 
-    // 2. Desenha Times
-    if (window.estado.times) {
-        window.estado.times.forEach(time => {
-            const div = document.createElement("div");
-            div.className = "time";
-            div.dataset.id = time.nome;
-            div.innerHTML = `
-                <h3>${time.nome} <span>${time.vitorias || 0} 🏆</span></h3>
-                <div class="lista-jogadores group-jogadores" data-time="${time.nome}">
-                    ${(time.jogadores || []).map(nome => htmlJogador(nome)).join('')}
-                </div>
-            `;
-            if (time.status === "jogando") containerJogando.appendChild(div);
-            else containerProxima.appendChild(div);
-        });
-    }
+  containerJogando.innerHTML = "";
+  containerProxima.innerHTML = "";
+  containerSobrando.innerHTML = "";
+  containerRanking.innerHTML = "";
 
-    // 3. Desenha Sobrando
-    if (window.estado.sobrando) {
-        window.estado.sobrando.forEach(nome => {
-            containerSobrando.innerHTML += htmlJogador(nome);
-        });
-    }
+  estado.times.forEach(time => {
+    const card = document.createElement("div");
+    card.className = "time";
+    card.dataset.id = time.nome; 
+    
+    card.innerHTML = `
+      <h3>${time.nome} <span>${time.vitorias || 0} 🏆</span></h3>
+      <div class="lista-jogadores group-jogadores" data-time="${time.nome}">
+        ${time.jogadores.map(nome => htmlJogador(nome)).join('')}
+      </div>
+    `;
 
-    // 4. Desenha Ranking
-    if (window.estado.times) {
-        const ranking = [...window.estado.times].sort((a,b) => (b.vitorias||0) - (a.vitorias||0));
-        ranking.forEach((t, i) => {
-            const nomes = (t.jogadores || []).join(", ");
-            containerRanking.innerHTML += `
-                <div style="border-bottom:1px solid #333; padding:5px; margin-bottom:5px;">
-                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                        <span>#${i+1} ${t.nome}</span>
-                        <span>${t.vitorias||0} vit</span>
-                    </div>
-                    <small style="opacity:0.6">${nomes}</small>
-                </div>
-            `;
-        });
-    }
-
-    // 5. Salva na nuvem (se não veio da nuvem)
-    // 5. Salva na nuvem (se não veio da nuvem)
-
-        // 🔥 ADICIONADO — sincroniza o tempo baseado na nuvem
-    // 🔥 5. sincroniza o tempo baseado na nuvem
-if (window.estado.timer) {
-    const agora = Date.now();
-    const passou = Math.floor((agora - window.estado.timer.inicio) / 1000);
-    window.tempoRestante = Math.max(
-        window.estado.timer.duracao - passou,
-        0
-    );
-
-    if (window.tempoRestante === 0 && !window.alertaTempoDisparado) {
-        window.alertaTempoDisparado = true;
-        tocarSom();
-    }
-}
-
-// 🔥 6. salva na nuvem (UMA ÚNICA VEZ)
-if (deveSalvar && !window.vindoDaNuvem) {
-    window.estado._lastUpdateBy = window.deviceId;
-    salvarNoFirebase();
-}
-
-atualizarTempoDisplay();
-iniciarSortables();
-
-};
-
-/* --- FUNÇÃO SALVAR --- */
-function salvarNoFirebase() {
-    // Verifica se a função de enviar existe (criada no index.html)
-    if (typeof window.enviarParaNuvem === "function") {
-        window.enviarParaNuvem(window.estado);
+    if (time.status === "jogando") {
+      containerJogando.appendChild(card);
     } else {
-        console.warn("Firebase ainda não carregou, salvando apenas localmente.");
+      containerProxima.appendChild(card);
     }
-    localStorage.setItem("pelada_backup", JSON.stringify(window.estado));
+  });
+
+  estado.sobrando.forEach(nome => {
+    containerSobrando.innerHTML += htmlJogador(nome);
+  });
+
+  const rankingOrdenado = [...estado.times].sort((a,b) => (b.vitorias||0) - (a.vitorias||0));
+  rankingOrdenado.forEach((t, i) => {
+    const nomesAtletas = t.jogadores.length > 0 ? t.jogadores.join(", ") : "Sem jogadores";
+    
+    containerRanking.innerHTML += `
+      <div class="rank-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <span>#${i+1} <b>${t.nome}</b></span> 
+          <span>${t.vitorias||0} vitórias</span>
+        </div>
+        <small style="opacity: 0.6; font-size: 11px;">🏃 ${nomesAtletas}</small>
+      </div>`;
+  });
+
+  salvar();
+  atualizarTempoDisplay();
+  iniciarSortables();
 }
 
-/* --- HTML AUXILIAR --- */
 function htmlJogador(nome) {
-    return `<div class="jogador" data-nome="${nome}">
-                ${nome} 
-                <button onclick="removerJogador('${nome}')" style="margin-left:5px; color:red; background:none; border:none; font-weight:bold;">×</button>
-            </div>`;
+  return `
+    <div class="jogador" data-nome="${nome}">
+      ${nome}
+      <button class="remove-btn" onclick="removerJogador('${nome}')">×</button>
+    </div>
+  `;
 }
 
-/* --- AÇÕES DO USUÁRIO --- */
-window.adicionarJogador = function() {
-    const input = document.getElementById("nomeJogador");
-    const nome = input.value.trim();
-    if (!nome) return;
-    
-    if (!window.estado.sobrando) window.estado.sobrando = [];
-    
-    if (!window.estado.sobrando.includes(nome)) {
-        window.estado.sobrando.push(nome);
-        input.value = "";
-        renderizar(true); // Salva e envia
-        darFeedback();
-    }
-};
-
-window.adicionarTime = function() {
-    const input = document.getElementById("nomeTime");
-    const nome = input.value.trim();
-    if (!nome) return;
-
-    if (!window.estado.times) window.estado.times = [];
-
-    window.estado.times.push({
-        nome: nome,
-        jogadores: [],
-        status: "proxima",
-        vitorias: 0
-    });
-    input.value = "";
-    renderizar(true);
-    darFeedback();
-};
-
-window.removerJogador = function(nome) {
-    if (!confirm("Remover " + nome + "?")) return;
-    
-    if (window.estado.sobrando)
-        window.estado.sobrando = window.estado.sobrando.filter(j => j !== nome);
-    
-    if (window.estado.times)
-        window.estado.times.forEach(t => t.jogadores = t.jogadores.filter(j => j !== nome));
-        
-    renderizar(true);
-};
-
-window.sortearTimes = function() {
-    if (!window.estado.sobrando || window.estado.sobrando.length === 0) 
-        return alert("Ninguém sobrando para sortear!");
-
-    let pool = [...window.estado.sobrando];
-    // Embaralha (Fisher-Yates)
-    for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-
-    window.estado.times.forEach(time => {
-        // Enche o time até ter 5 ou acabar os jogadores
-        while (time.jogadores.length < 5 && pool.length > 0) {
-            time.jogadores.push(pool.shift());
-        }
-    });
-
-    window.estado.sobrando = pool;
-    renderizar(true);
-    alert("Times sorteados!");
-};
-
-/* --- DRAG AND DROP (Sortable) --- */
+/* --- LÓGICA DO SORTABLE JS --- */
 function iniciarSortables() {
-    const areas = ['jogando', 'proxima', 'sobrando'];
-    const containers = document.querySelectorAll('.lista-jogadores, .container-times');
-    
-    // Configura drag and drop para jogadores e times
-    const els = document.querySelectorAll('#jogando, #proxima, #sobrando, .lista-jogadores');
-    els.forEach(el => {
-        new Sortable(el, {
-            group: el.id === 'jogando' || el.id === 'proxima' ? 'times' : 'jogadores',
-            animation: 150,
-            onEnd: () => sincronizarDOM()
-        });
-    });
-}
-
-function sincronizarDOM() {
-    // Reconstrói o estado olhando para a tela
-    const novosTimes = [];
-    
-    // Ler times Jogando
-    document.querySelectorAll("#jogando .time").forEach(el => novosTimes.push(lerTimeDOM(el, "jogando")));
-    // Ler times Proxima
-    document.querySelectorAll("#proxima .time").forEach(el => novosTimes.push(lerTimeDOM(el, "proxima")));
-    
-    // Ler Sobrando
-    const novosSobrando = [];
-    document.querySelectorAll("#sobrando .jogador").forEach(el => novosSobrando.push(el.dataset.nome));
-
-    window.estado.sobrando = novosSobrando;
-    
-    // Preserva vitórias antigas
-    window.estado.times = novosTimes.map(nt => {
-        const old = (window.estado.times || []).find(t => t.nome === nt.nome);
-        if (old) nt.vitorias = old.vitorias;
-        return nt;
-    });
-
-    renderizar(true); // Salva a nova ordem
-}
-
-function lerTimeDOM(el, status) {
-    const nome = el.dataset.id;
-    const jogadores = [];
-    el.querySelectorAll(".jogador").forEach(j => jogadores.push(j.dataset.nome));
-    return { nome, status, jogadores, vitorias: 0 };
-}
-
-/* --- VITORIA / EMPATE --- */
-window.timeGanhou = function() {
-    const jogando = window.estado.times.filter(t => t.status === "jogando");
-    if (jogando.length !== 2) return alert("Precisa de 2 times jogando!");
-    
-    const modal = document.getElementById("modalVitoria");
-    const container = document.getElementById("opcoesVitoria");
-    container.innerHTML = "";
-    
-    jogando.forEach(t => {
-        const btn = document.createElement("button");
-        btn.innerText = "🏆 " + t.nome;
-        btn.className = "btn-zao-verde";
-        btn.onclick = () => confirmarVitoria(t.nome);
-        container.appendChild(btn);
-    });
-    modal.style.display = "flex";
-};
-
-window.confirmarVitoria = function(nomeVencedor) {
-    // Confete
-    if(window.confetti) window.confetti();
-
-    const jogando = window.estado.times.filter(t => t.status === "jogando");
-    const vencedor = jogando.find(t => t.nome === nomeVencedor);
-    const perdedor = jogando.find(t => t.nome !== nomeVencedor);
-    
-    if(vencedor) vencedor.vitorias = (vencedor.vitorias || 0) + 1;
-    if(perdedor) perdedor.status = "proxima";
-    
-    // Move perdedor pro fim da fila
-    window.estado.times = window.estado.times.filter(t => t !== perdedor);
-    window.estado.times.push(perdedor);
-    
-    // Puxa o próximo
-    const proximo = window.estado.times.find(t => t.status === "proxima" && t !== perdedor);
-    if(proximo) proximo.status = "jogando";
-    
-    document.getElementById("modalVitoria").style.display = "none";
-    resetarTimer();
-    renderizar(true);
-};
-
-window.empate = function() {
-    if(!confirm("Empate? Os dois saem.")) return;
-    const jogando = window.estado.times.filter(t => t.status === "jogando");
-    
-    jogando.forEach(t => {
-        t.status = "proxima";
-        // Move pro fim
-        window.estado.times = window.estado.times.filter(x => x !== t);
-        window.estado.times.push(t);
-    });
-    
-    // Puxa 2 novos
-    const proximos = window.estado.times.filter(t => t.status === "proxima").slice(0,2);
-    proximos.forEach(t => t.status = "jogando");
-    
-    resetarTimer();
-    renderizar(true);
-};
-
-window.fecharModalVitoria = () => document.getElementById("modalVitoria").style.display = "none";
-window.resetarTudo = () => {
-    if(confirm("Zerar tudo?")) {
-        window.estado = { times: [], sobrando: [] };
-        renderizar(true);
-        location.reload();
+  const areasTimes = [document.getElementById('jogando'), document.getElementById('proxima')];
+  areasTimes.forEach(area => {
+    if(area) {
+      new Sortable(area, {
+        group: 'times',
+        animation: 150,
+        handle: 'h3',
+        onEnd: () => sincronizarEstadoComDOM()
+      });
     }
-};
+  });
 
-/* --- TIMER E UTILITÁRIOS --- */
-function atualizarTempoDisplay() {
-    const display = document.getElementById("tempo");
-    if(!display) return;
-    const m = Math.floor(window.tempoRestante / 60).toString().padStart(2,'0');
-    const s = (window.tempoRestante % 60).toString().padStart(2,'0');
-    display.innerText = `${m}:${s}`;
+  const areasJogadores = document.querySelectorAll('.lista-jogadores, #sobrando');
+  areasJogadores.forEach(area => {
+    new Sortable(area, {
+      group: 'jogadores',
+      animation: 150,
+      onEnd: () => sincronizarEstadoComDOM()
+    });
+  });
 }
 
-window.iniciarTimer = function() {
-    window.alertaTempoDisparado = false;
-    window.estado.timer = {
-        inicio: Date.now(),
-        duracao: window.tempoPadrao
-    };
-    renderizar(true);
-};
+function sincronizarEstadoComDOM() {
+  const timesAtualizados = [];
+  
+  document.getElementById("jogando").querySelectorAll(".time").forEach(el => {
+    timesAtualizados.push(montarObjetoTime(el, "jogando"));
+  });
 
+  document.getElementById("proxima").querySelectorAll(".time").forEach(el => {
+    timesAtualizados.push(montarObjetoTime(el, "proxima"));
+  });
 
-window.pausarTimer = function() {
-    if (!window.estado.timer) return;
+  const novosSobrando = [];
+  document.getElementById("sobrando").querySelectorAll(".jogador").forEach(el => {
+    novosSobrando.push(el.dataset.nome);
+  });
 
+  estado.sobrando = novosSobrando;
+  
+  estado.times = timesAtualizados.map(novoT => {
+    const antigoT = estado.times.find(t => t.nome === novoT.nome);
+    if (antigoT) novoT.vitorias = antigoT.vitorias;
+    return novoT;
+  });
+
+  salvar();
+}
+
+function montarObjetoTime(elementoDOM, status) {
+  const nome = elementoDOM.dataset.id;
+  const jogadores = [];
+  elementoDOM.querySelectorAll(".jogador").forEach(j => {
+    jogadores.push(j.dataset.nome);
+  });
+  return { nome, status, jogadores, vitorias: 0 };
+}
+
+/* --- AÇÕES DO JOGO --- */
+
+function adicionarJogadoresMassa() {
+  const input = document.getElementById("nomeJogador");
+  const texto = input.value;
+  if (!texto.trim()) return;
+
+  const nomesExtraidos = texto.split(/[,|\n]/);
+  nomesExtraidos.forEach(nome => {
+    const nomeLimpo = nome.trim();
+    if (nomeLimpo.length > 0 && !estado.sobrando.includes(nomeLimpo)) {
+      estado.sobrando.push(nomeLimpo);
+    }
+  });
+
+  input.value = ""; 
+  renderizar();
+}
+
+function adicionarJogador() { adicionarJogadoresMassa(); }
+
+function adicionarTime() {
+  const input = document.getElementById("nomeTime");
+  if (!input.value) return;
+  estado.times.push({
+    nome: input.value,
+    jogadores: [],
+    status: "proxima",
+    vitorias: 0
+  });
+  input.value = "";
+  renderizar();
+}
+
+function removerJogador(nome) {
+  if(!confirm(`Remover ${nome}?`)) return;
+  estado.sobrando = estado.sobrando.filter(j => j !== nome);
+  estado.times.forEach(t => t.jogadores = t.jogadores.filter(j => j !== nome));
+  renderizar();
+}
+
+/* --- VITORIA E EMPATE --- */
+
+function timeGanhou() {
+  const jogando = estado.times.filter(t => t.status === "jogando");
+  if (jogando.length !== 2) return alert("Precisa ter 2 times na área 'Jogando Agora'!");
+
+  const modal = document.getElementById("modalVitoria");
+  const containerOpcoes = document.getElementById("opcoesVitoria");
+  containerOpcoes.innerHTML = "";
+
+  jogando.forEach(time => {
+    const btn = document.createElement("button");
+    btn.className = "btn-zao-verde";
+    btn.style.width = "100%";
+    btn.innerHTML = `🏆 ${time.nome}`;
+    btn.onclick = () => confirmarVencedor(time.nome);
+    containerOpcoes.appendChild(btn);
+  });
+  modal.style.display = "flex";
+}
+
+function confirmarVencedor(nomeVencedor) {
+  // --- CHUVA DE CONFETE ---
+  if (typeof confetti === "function") {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      zIndex: 9999
+    });
+  }
+
+  const jogando = estado.times.filter(t => t.status === "jogando");
+  const vencedor = jogando.find(t => t.nome === nomeVencedor);
+  const perdedor = jogando.find(t => t.nome !== nomeVencedor);
+
+  if (vencedor) vencedor.vitorias = (vencedor.vitorias || 0) + 1;
+  if (perdedor) perdedor.status = "proxima";
+
+  // Reposiciona perdedor no fim da fila
+  estado.times = estado.times.filter(t => t !== perdedor);
+  estado.times.push(perdedor);
+
+  // Coloca o próximo para jogar
+  const proximo = estado.times.find(t => t.status === "proxima" && t !== perdedor);
+  if (proximo) proximo.status = "jogando";
+
+  fecharModalVitoria();
+  resetarTimer();
+  renderizar();
+}
+
+function fecharModalVitoria() {
+  document.getElementById("modalVitoria").style.display = "none";
+}
+
+function empate() {
+  if (!confirm("Confirmar empate? Os dois saem.")) return;
+  const jogando = estado.times.filter(t => t.status === "jogando");
+  
+  jogando.forEach(t => {
+    t.status = "proxima";
+    estado.times = estado.times.filter(x => x !== t);
+    estado.times.push(t);
+  });
+
+  const proximos = estado.times.filter(t => t.status === "proxima").slice(0, 2);
+  proximos.forEach(t => t.status = "jogando");
+
+  resetarTimer();
+  renderizar();
+}
+
+function resetarTudo() {
+  if (confirm("Apagar tudo e começar do zero?")) {
+    localStorage.removeItem("pelada");
+    location.reload();
+  }
+}
+
+/* --- TIMER --- */
+function iniciarTimer() {
+  if (intervalo) return;
+  const som = document.getElementById("somFim");
+  if(som) som.load(); 
+  dataAlvo = Date.now() + (tempoRestante * 1000);
+  intervalo = setInterval(() => {
     const agora = Date.now();
-    const passou = Math.floor((agora - window.estado.timer.inicio) / 1000);
-    window.estado.timer.duracao = Math.max(
-        window.estado.timer.duracao - passou,
-        0
-    );
-
-    delete window.estado.timer.inicio;
-    renderizar(true);
-    darFeedback();
-};
-
-
-window.resetarTimer = function() {
-    window.alertaTempoDisparado = false;
-    delete window.estado.timer;
-    window.tempoRestante = window.tempoPadrao;
+    const diff = Math.ceil((dataAlvo - agora) / 1000);
+    if (diff <= 0) {
+      tempoRestante = 0;
+      pausarTimer();
+      tocarSom();
+    } else {
+      tempoRestante = diff;
+    }
     atualizarTempoDisplay();
-    renderizar(true);
-    darFeedback();
-};
+  }, 1000);
+}
 
+function pausarTimer() {
+  clearInterval(intervalo);
+  intervalo = null;
+}
 
+function resetarTimer() {
+  pausarTimer();
+  tempoRestante = tempoPadrao;
+  atualizarTempoDisplay();
+}
 
-window.adicionarMinuto = function() {
-    if (!window.estado.timer) return;
-    window.estado.timer.duracao += 60;
-    renderizar(true);
-};
-window.mudarTempoPadrao = function(t) { window.tempoPadrao = t*60; window.tempoRestante = window.tempoPadrao; atualizarTempoDisplay(); };
+function atualizarTempoDisplay() {
+  const display = document.getElementById("tempo");
+  if(!display) return;
+  const m = Math.floor(tempoRestante / 60).toString().padStart(2, '0');
+  const s = (tempoRestante % 60).toString().padStart(2, '0');
+  display.innerText = `${m}:${s}`;
+}
 
 function tocarSom() {
-    const audio = document.getElementById("somFim");
-    if(audio) audio.play();
-    alert("ACABOU O TEMPO!");
+  const audio = document.getElementById("somFim");
+  if(audio) audio.play().catch(e => console.log(e));
+  alert("FIM DE JOGO! ⏱️");
 }
 
-function darFeedback() { if(navigator.vibrate) navigator.vibrate(50); }
+/* --- UTILITÁRIOS --- */
+function alternarTema() {
+  document.body.classList.toggle("light");
+  localStorage.setItem("tema", document.body.classList.contains("light") ? "light" : "dark");
+}
 
-/* --- AUTENTICAÇÃO SIMPLES --- */
-window.verificarSenha = function() {
-    if(document.getElementById("senhaAcesso").value === "PILANTRA123") {
-        document.getElementById("telaLogin").style.display = "none";
-        sessionStorage.setItem("logado", "true");
-    } else {
-        document.getElementById("erroLogin").style.display = "block";
+function salvar() {
+  localStorage.setItem("pelada", JSON.stringify(estado));
+}
+
+function gerarPrintRanking() {
+  const r = document.getElementById("ranking");
+  html2canvas(r).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'ranking-pelada.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+
+function sortearTimes() {
+  if (estado.sobrando.length === 0) return alert("Não há jogadores sobrando!");
+
+  let jogadoresParaSortear = [...estado.sobrando];
+  for (let i = jogadoresParaSortear.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [jogadoresParaSortear[i], jogadoresParaSortear[j]] = [jogadoresParaSortear[j], jogadoresParaSortear[i]];
+  }
+
+  estado.times.forEach(time => {
+    while (time.jogadores.length < 5 && jogadoresParaSortear.length > 0) {
+      time.jogadores.push(jogadoresParaSortear.shift());
     }
+  });
+
+  estado.sobrando = jogadoresParaSortear;
+  renderizar();
+}
+
+function abrirAjuda() { document.getElementById('modalAjuda').style.display = 'flex'; }
+function fecharAjuda() { document.getElementById('modalAjuda').style.display = 'none'; }
+
+function adicionarMinuto() {
+  tempoRestante += 60;
+  if (!intervalo) {
+    atualizarTempoDisplay();
+  } else {
+    dataAlvo += 60000;
+  }
+}
+
+function mudarTempoPadrao(minutos) {
+  tempoPadrao = minutos * 60;
+  tempoRestante = tempoPadrao;
+  atualizarTempoDisplay();
+  salvar();
+}
+
+// Hack iOS áudio
+document.body.addEventListener('touchstart', function() {
+  const a = document.getElementById("somFim");
+  if(a) { a.play().then(() => { a.pause(); a.currentTime=0; }).catch(()=>{}); }
+}, {once:true});
+
+function verificarSenha() {
+  const senhaCorreta = "PILANTRA123"; // Defina sua senha aqui
+  const senhaDigitada = document.getElementById("senhaAcesso").value;
+  const erro = document.getElementById("erroLogin");
+
+  if (senhaDigitada === senhaCorreta) {
+    document.getElementById("telaLogin").style.display = "none";
+    sessionStorage.setItem("autorizado", "true"); // Mantém logado apenas nesta sessão
+  } else {
+    erro.style.display = "block";
+    alert("Senha incorreta!");
+  }
+}
+
+// Verifica se já estava logado ao carregar a página
+window.onload = () => {
+  if (sessionStorage.getItem("autorizado") === "true") {
+    document.getElementById("telaLogin").style.display = "none";
+  }
 };
 
-if(sessionStorage.getItem("logado") === "true") {
-    document.getElementById("telaLogin").style.display = "none";
-}
-
-// Inicializa visualmente (esperando firebase)
-renderizar(false);
+// INICIALIZAÇÃO
+renderizar();
