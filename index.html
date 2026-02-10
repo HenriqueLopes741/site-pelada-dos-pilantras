@@ -97,8 +97,8 @@
 
     <script type="module">
         // 1. IMPORTAR FIREBASE
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, update, onValue } 
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // 2. CONFIGURAÇÃO (COLE SUAS CHAVES AQUI!!!)
         const firebaseConfig = {
@@ -120,26 +120,25 @@
 
         // 4. FUNÇÃO PARA ENVIAR (Global)
         window.enviarParaNuvem = function(dados) {
-            set(peladaRef, dados)
-                .then(() => console.log("Dado enviado com sucesso!"))
-                .catch((e) => console.error("Erro ao enviar:", e));
+        update(peladaRef, dados)
+        .catch(e => console.error("Erro Firebase:", e));
         };
+
 
         // 5. FUNÇÃO PARA RECEBER (Ouvido Bionico)
         onValue(peladaRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                console.log("📡 DADOS RECEBIDOS:", data);
-                
-                // Atualiza as variáveis GLOBAIS que o script.js usa
-                window.estado = data;
-                
-                // Manda o script.js desenhar a tela (sem salvar de volta pra não dar loop)
-                if (typeof window.renderizar === "function") {
-                    window.renderizar(false); 
-                }
-            }
-        });
+    const data = snapshot.val();
+    if (!data) return;
+
+    // ignora atualização que veio do próprio dispositivo
+    if (data._lastUpdateBy === window.deviceId) return;
+
+    window.vindoDaNuvem = true;
+    window.estado = data;
+    window.renderizar(false);
+    window.vindoDaNuvem = false;
+});
+
     </script>
 
     <script src="script.js"></script>

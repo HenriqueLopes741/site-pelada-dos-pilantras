@@ -1,5 +1,18 @@
 /* --- CONFIGURAÇÃO INICIAL GLOBAL --- */
 // Definimos window.estado para garantir que todos vejam a mesma coisa
+// trava de sincronização
+window.vindoDaNuvem = false;
+window.alertaTempoDisparado = false;
+
+
+// id único do dispositivo
+window.deviceId = localStorage.getItem("deviceId");
+if (!window.deviceId) {
+    window.deviceId = crypto.randomUUID();
+    localStorage.setItem("deviceId", window.deviceId);
+}
+
+
 window.estado = window.estado || {
     times: [],
     sobrando: []
@@ -73,12 +86,33 @@ window.renderizar = function(deveSalvar = true) {
     }
 
     // 5. Salva na nuvem (se não veio da nuvem)
-    if (deveSalvar) {
-        salvarNoFirebase();
+    // 5. Salva na nuvem (se não veio da nuvem)
+
+        // 🔥 ADICIONADO — sincroniza o tempo baseado na nuvem
+    // 🔥 5. sincroniza o tempo baseado na nuvem
+if (window.estado.timer) {
+    const agora = Date.now();
+    const passou = Math.floor((agora - window.estado.timer.inicio) / 1000);
+    window.tempoRestante = Math.max(
+        window.estado.timer.duracao - passou,
+        0
+    );
+
+    if (window.tempoRestante === 0 && !window.alertaTempoDisparado) {
+        window.alertaTempoDisparado = true;
+        tocarSom();
     }
-    
-    atualizarTempoDisplay();
-    iniciarSortables();
+}
+
+// 🔥 6. salva na nuvem (UMA ÚNICA VEZ)
+if (deveSalvar && !window.vindoDaNuvem) {
+    window.estado._lastUpdateBy = window.deviceId;
+    salvarNoFirebase();
+}
+
+atualizarTempoDisplay();
+iniciarSortables();
+
 };
 
 /* --- FUNÇÃO SALVAR --- */
@@ -298,33 +332,47 @@ function atualizarTempoDisplay() {
 }
 
 window.iniciarTimer = function() {
-    if(window.intervalo) return;
-    window.intervalo = setInterval(() => {
-        window.tempoRestante--;
-        if(window.tempoRestante <= 0) {
-            window.tempoRestante = 0;
-            pausarTimer();
-            tocarSom();
-        }
-        atualizarTempoDisplay();
-    }, 1000);
-    darFeedback();
+    window.alertaTempoDisparado = false;
+    window.estado.timer = {
+        inicio: Date.now(),
+        duracao: window.tempoPadrao
+    };
+    renderizar(true);
 };
+
 
 window.pausarTimer = function() {
-    clearInterval(window.intervalo);
-    window.intervalo = null;
+    if (!window.estado.timer) return;
+
+    const agora = Date.now();
+    const passou = Math.floor((agora - window.estado.timer.inicio) / 1000);
+    window.estado.timer.duracao = Math.max(
+        window.estado.timer.duracao - passou,
+        0
+    );
+
+    delete window.estado.timer.inicio;
+    renderizar(true);
     darFeedback();
 };
+
 
 window.resetarTimer = function() {
-    pausarTimer();
+    window.alertaTempoDisparado = false;
+    delete window.estado.timer;
     window.tempoRestante = window.tempoPadrao;
     atualizarTempoDisplay();
+    renderizar(true);
     darFeedback();
 };
 
-window.adicionarMinuto = function() { window.tempoRestante += 60; atualizarTempoDisplay(); };
+
+
+window.adicionarMinuto = function() {
+    if (!window.estado.timer) return;
+    window.estado.timer.duracao += 60;
+    renderizar(true);
+};
 window.mudarTempoPadrao = function(t) { window.tempoPadrao = t*60; window.tempoRestante = window.tempoPadrao; atualizarTempoDisplay(); };
 
 function tocarSom() {
