@@ -113,6 +113,41 @@
     <source src="https://actions.google.com/sounds/v1/alarms/buzzer.mp3" type="audio/mpeg">
   </audio>
 
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHpJlzcM3zta6R9h5dq6HiojXdodTT1O8",
+    authDomain: "peladapilantraspro.firebaseapp.com",
+    databaseURL: "https://peladapilantraspro-default-rtdb.firebaseio.com",
+    projectId: "peladapilantraspro",
+    storageBucket: "peladapilantraspro.firebasestorage.app",
+    messagingSenderId: "444542616913",
+    appId: "1:444542616913:web:16a9f42f0d85f21371bf70"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const peladaRef = ref(db, 'partida_atual');
+
+  // Função global para salvar na nuvem
+  window.enviarParaNuvem = function(dados) {
+    set(peladaRef, dados);
+  };
+
+  // Escuta mudanças em tempo real
+  onValue(peladaRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data && JSON.stringify(data) !== JSON.stringify(window.estado)) {
+      window.estado = data;
+      // Chamamos a renderização passando 'false' para não entrar em loop de salvamento
+      if (typeof window.renderizar === "function") {
+        window.renderizar(false);
+      }
+    }
+  });
+</script>
   <script src="script.js"></script>
 
   <div class="topo" style="margin-top: 10px;">

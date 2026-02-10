@@ -1,3 +1,6 @@
+
+
+
 /* ESTADO INICIAL */
 let estado = JSON.parse(localStorage.getItem("pelada")) || {
   times: [],
@@ -17,13 +20,14 @@ if (localStorage.getItem("tema") === "light") {
 
 /* --- FUNÇÕES PRINCIPAIS --- */
 
-function renderizar() {
+/* Substitua sua função renderizar atual por esta */
+function renderizar(deveSalvarNuvem = true) {
   const containerJogando = document.getElementById("jogando");
   const containerProxima = document.getElementById("proxima");
   const containerSobrando = document.getElementById("sobrando");
   const containerRanking = document.getElementById("ranking");
 
-  if(!containerJogando) return; // Evita erros se o DOM não estiver pronto
+  if(!containerJogando) return;
 
   containerJogando.innerHTML = "";
   containerProxima.innerHTML = "";
@@ -67,9 +71,20 @@ function renderizar() {
       </div>`;
   });
 
-  salvar();
+  // Salva local e na nuvem se a mudança partiu deste usuário
+  salvar(deveSalvarNuvem);
   atualizarTempoDisplay();
   iniciarSortables();
+}
+
+/* Substitua sua função salvar atual por esta */
+function salvar(enviarFirebase = true) {
+  localStorage.setItem("pelada", JSON.stringify(estado));
+  
+  // Só envia para o Firebase se a alteração foi feita neste dispositivo
+  if (enviarFirebase && typeof window.enviarParaNuvem === "function") {
+    window.enviarParaNuvem(estado);
+  }
 }
 
 function htmlJogador(nome) {
@@ -393,4 +408,22 @@ window.onload = () => {
 };
 
 // INICIALIZAÇÃO
+
+// Feedback Tátil (Vibração)
+function darFeedback() {
+  if (navigator.vibrate) navigator.vibrate(50);
+}
+
+// Notificação elegante (Toast)
+function toast(msg) {
+  const t = document.createElement("div");
+  t.innerHTML = msg;
+  t.style.cssText = "position:fixed; bottom:140px; left:50%; transform:translateX(-50%); background:#22c55e; color:white; padding:10px 20px; border-radius:30px; z-index:9000; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.5); animation: entradaSuave 0.3s forwards;";
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// Adicione darFeedback() dentro de funções de clique como:
+// function timeGanhou() { darFeedback(); ... }
+
 renderizar();
