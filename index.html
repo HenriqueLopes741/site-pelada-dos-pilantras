@@ -137,16 +137,36 @@
   };
 
   // Escuta mudanças em tempo real
-  onValue(peladaRef, (snapshot) => {
+  // ESCUTAR MUDANÇAS (Ouvido do App)
+onValue(peladaRef, (snapshot) => {
     const data = snapshot.val();
-    if (data && JSON.stringify(data) !== JSON.stringify(window.estado)) {
-      window.estado = data;
-      // Chamamos a renderização passando 'false' para não entrar em loop de salvamento
-      if (typeof window.renderizar === "function") {
-        window.renderizar(false);
-      }
+    
+    console.log("📡 RECEBI DO FIREBASE:", data); // <--- O DEDO-DURO
+
+    if (data) {
+        // Atualiza as variáveis globais do seu jogo
+        // IMPORTANTE: Os nomes aqui têm que ser iguais aos do seu script.js
+        window.jogadores = data.jogadores || [];
+        window.sobrando = data.sobrando || [];
+        window.times = data.times || [];
+        window.historico = data.historico || [];
+        
+        // Se tiver cronômetro salvo e estiver rodando
+        if (data.tempo && data.tempo.rodando) {
+             // Lógica do tempo (podemos ver isso depois)
+        }
+
+        console.log("🔄 MANDANDO RENDERIZAR A TELA...");
+        
+        // Chama a função do seu script.js para desenhar a tela
+        // O 'false' é para NÃO salvar de volta e criar loop
+        if (typeof window.renderizar === "function") {
+            window.renderizar(false); 
+        } else {
+            console.error("❌ ERRO: Não achei a função window.renderizar!");
+        }
     }
-  });
+});
 </script>
   <script src="script.js"></script>
 
